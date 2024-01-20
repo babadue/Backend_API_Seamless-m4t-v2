@@ -25,6 +25,8 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ChatGPT-3.5 the coding machine!
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The voice recording portion is attributed to Bing Chatbot!
+
 ## Project Attribution
     Model from Hugging Face: 
     - facebook/seamless-m4t-v2-large
