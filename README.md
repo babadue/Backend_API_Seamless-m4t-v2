@@ -7,8 +7,10 @@
 ## Purposes:
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Demonstration two API calls:
-- Text-to-speech translation (T2ST) - t2s
 - Text-to-text translation (T2TT) - t2t
+- Text-to-speech translation (T2ST) - t2s
+- Speech-to-text translation (S2TT) - s2t
+- Speech-to-speech translation (S2ST) - s2s
 
 
 ## File Descriptions
