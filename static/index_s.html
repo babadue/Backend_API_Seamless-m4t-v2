@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web API Seamlessm4tv2 Demo</title>
+    <script>
+        var srcLang = "eng"
+        var tgtLang = "eng"
+        let audioData;
+        let mediaRecorder;
+        let chunks = [];
+        let audioURL;
+        let myAudioData;
+        let mySampleRate = 16000;  //required by seamlessm4tv2 model
+        let stopButtonId;
+
+        // Function to create a dropdown list
+        function createDropdown(id, options, callback) {
+            var select = document.createElement("select");
+            select.id = id;
+            select.name = id;
+            // Create options based on the provided array
+            for (var i = 0; i < options.length; i++) {
+                var option = document.createElement("option");
+                option.value = options[i].value;
+                option.text = options[i].text;
+                select.appendChild(option);
+            }
+            // Set the onchange attribute to trigger the callback function
+            select.onchange = function() {
+                callback(id); // Pass the ID of the selected dropdown to the callback function
+            };
+            return select;
+        }
+
+        // Function to show selected value
+        function srcDropdownSelected(selectId) {
+            var selectedValue = document.getElementById(selectId).value;
+            srcLang = selectedValue
+            console.log('you selected srcLang: ', srcLang);
+        }
+        function tgtDropdownSelected(selectId) {
+            var selectedValue = document.getElementById(selectId).value;
+            tgtLang =  selectedValue
+            console.log('you selected tgtLang: ', tgtLang);
+        }
+        // Text 2 Text Translate
+        function t2tTranslate(selectId) {
+             // Get the input text value
+            const inputText = document.getElementById('inputText').value;
+            console.log("inputText:", inputText);
+            console.log("kv inputText:", JSON.stringify({ inputText }));
+            console.log("kv srcLang:", JSON.stringify({ srcLang }));
+            console.log("kv json ", JSON.stringify({ inputText, srcLang, tgtLang}));
+
+            fetch('https://192.168.51.33:5502/t2t', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ inputText, srcLang, tgtLang}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display the processed text
+                document.getElementById('result').innerText = data.processedText;
+
+                console.log("did have data.processedText.", data.processedText);
+                //check sample_rate if available
+                if (data.sample_rate) {
+                console.log("did have sample_rate:", data.sample_rate);
+                }
+                // Play audio if available
+                if (data.audioData) {
+                console.log("did have audioData.");
+                playAudio(data.audioData, data.sample_rate);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Text 2 Speech Translate
+        function t2sTranslate(selectId) {
+             // Get the input text value
+            const inputText = document.getElementById('inputText').value;
+            fetch('https://192.168.51.33:5502/t2s', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ inputText, srcLang, tgtLang}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                //check sample_rate if available
+                if (data.sample_rate) {
+                console.log("did have sample_rate:", data.sample_rate);
+                }
+                // Play audio if available
+                if (data.audioData) {
+                console.log("did have audioData.");
+                audioData = data.audioData;
+                sampleRate = data.sample_rate;
+                playAudio(data.audioData, data.sample_rate);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Speech 2 Text Translate
+        function s2tTranslate(selectId) {
+            // button_s2t_start
+            console.log("s2tTranslate");
+            // button_s2t_start
+            document.getElementById('button_s2t_start').disabled = false;
+            document.getElementById('button_s2t_stop').disabled = true;
+
+        }
+
+        // Speech 2 Text Translate
+        function s2sTranslate(selectId) {
+            // button_s2t_start
+            console.log("s2sTranslate");
+            // button_s2t_start
+            document.getElementById('button_s2s_start').disabled = false;
+            document.getElementById('button_s2s_stop').disabled = true;
+
+        }
+
+        // Function to play audio using Web Audio API on the client side
+        function playAudio(audioData, sample_rate) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioBuffer = audioContext.createBuffer(1, audioData.length, sample_rate);
+            console.log('playAudio audioData.length:  sample_rate ', audioData.length, sample_rate);
+            // console.log('playAudio audioData ', audioData);
+
+            // Fill the buffer with the audio data
+            const audioBufferChannel = audioBuffer.getChannelData(0);
+            for (let i = 0; i < audioData.length; i++) {
+                audioBufferChannel[i] = audioData[i];
+            }
+
+            // Create an audio buffer source node
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+
+            // Connect the source to the audio context's destination (speakers)
+            source.connect(audioContext.destination);
+
+            // Start playing the audio
+            source.start();
+        }
+
+        // Speech 2 Text Translate
+        function send_s2tTranslate(audioData, sampleRate) {
+            // audioSample = Array.from(audioData);
+            audioSample = audioData;
+            sampleRate = sampleRate;
+            console.log('send_s2tTranslate audioSample.length:  sampleRate ', audioSample.length, sampleRate);
+            // playAudio(audioSample, sampleRate);
+            fetch('https://192.168.51.33:5502/s2t', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ audioSample, sampleRate, srcLang, tgtLang}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display the processed text
+                document.getElementById('result').innerText = data.processedText;
+                console.log("did have data.processedText.", data.processedText);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Speech 2 Speech Translate
+        function send_s2sTranslate(audioData, sampleRate) {
+            // audioSample = Array.from(audioData);
+            audioSample = audioData;
+            sampleRate = sampleRate;
+            console.log('send_s2sTranslate audioSample.length:  sampleRate ', audioSample.length, sampleRate);
+            // playAudio(audioSample, sampleRate);
+            fetch('https://192.168.51.33:5502/s2s', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ audioSample, sampleRate, srcLang, tgtLang}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                //check sample_rate if available
+                if (data.sample_rate) {
+                console.log("did have sample_rate:", data.sample_rate);
+                }
+                // Play audio if available
+                if (data.audioData) {
+                console.log("did have audioData.");
+                audioData = data.audioData;
+                sampleRate = data.sample_rate;
+                playAudio(data.audioData, data.sample_rate);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+    async function startRecording(button) {
+        console.log('startRecording_s2t function buttonId: ', button.id);
+        button.disabled = true;
+        if (button.id == 'button_s2t_start'){
+            console.log('startRecording function u pressed button button_s2t_start');
+            button.disabled = true;
+            // document.getElementById('button_s2t_start').disabled = true;
+            document.getElementById('button_s2t_stop').disabled = false;
+
+        }else {
+            console.log('startRecording function u pressed button button_s2s_start');
+            document.getElementById('button_s2s_stop').disabled = false;
+        }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 48000 } });
+      mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 16000 });
+
+      mediaRecorder.ondataavailable = (e) => {
+        chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
+        chunks = [];
+        const reader = new FileReader();
+        reader.onload = () => {
+          const arrayBuffer = reader.result;
+          const audioContext = new AudioContext();
+          audioContext.decodeAudioData(arrayBuffer, (audioBuffer) => {
+            console.log('audioBuffer.sampleRate: ', audioBuffer.sampleRate);
+            const sourceBuffer = audioBuffer.getChannelData(0);
+            const targetBuffer = new Float32Array(Math.round(sourceBuffer.length * mySampleRate / audioBuffer.sampleRate));
+            const ratio = sourceBuffer.length / targetBuffer.length;
+            for (let i = 0; i < targetBuffer.length; i++) {
+              const sourceIndex = Math.round(i * ratio);
+              targetBuffer[i] = sourceBuffer[sourceIndex];
+            }
+            myAudioData =  Array.from(targetBuffer);
+            playAudio(myAudioData, mySampleRate);
+            if (button.id == 'button_s2t_start'){
+                console.log('startRecording function u pressed button button_s2t_start');
+                send_s2tTranslate(myAudioData, mySampleRate);
+            }else {
+                console.log('startRecording function u pressed button button_s2s_start');
+                send_s2sTranslate(myAudioData, mySampleRate);
+            }
+            
+          });
+        };
+        reader.readAsArrayBuffer(blob);
+      };
+      mediaRecorder.start();
+    };
+
+    function stopRecording(button) {
+        console.log('stopRecording fnc');
+        button.disabled = true
+        mediaRecorder.stop();
+    };
+
+
+    </script>
+</head>
+<body>
+
+    <h2 style="text-align: center; margin: 0;">Web Interface API for facebook/seamless-m4t-v2-large Model Backend Demonstration</h2>
+    <br><br>
+    <!-- Insert the dropdown dynamically with a unique ID -->
+    <div id="dropdownContainer">
+        <!-- You can create multiple dropdowns by calling the createDropdown function -->
+        <script>
+            var langOptions = [
+                { value: "eng", text: "English" },
+                { value: "cmn", text: "Chinese" },
+                { value: "tha", text: "Thai" },
+                { value: "deu", text: "German" },
+                { value: "rus", text: "Russian" },
+                { value: "fra", text: "Franch" },
+                { value: "spa", text: "Spanish" },
+                { value: "jpn", text: "Japanese" },
+                { value: "vie", text: "Vietnamese" }
+            ];
+        </script>
+
+        <label for="inputText">Input Text:</label>
+        <input type="text" id="inputText" name="inputText" required style="width: 400px;">
+        <br><br>
+        <label for="label1">Source Language:</label>
+        <script>            
+            var srcDropdown = createDropdown("srcLang", langOptions, srcDropdownSelected);
+            document.getElementById("dropdownContainer").appendChild(srcDropdown);
+        </script>
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        <label for="label1">Target Language:</label>
+        <script>
+            var tgtDropdown = createDropdown("tgtLang", langOptions, tgtDropdownSelected);
+            document.getElementById("dropdownContainer").appendChild(tgtDropdown);
+        </script>
+
+        <br><br>
+        <div class="button-container">
+            <!-- Button to show selected value for the first dropdown -->
+            <button type="button" onclick="t2tTranslate('t2t')">&nbsp;&nbsp;&nbsp;Text to Text&nbsp;&nbsp;&nbsp;</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <!-- Button to show selected value for the second dropdown -->
+            <button type="button" onclick="t2sTranslate('t2s')">&nbsp;&nbsp;&nbsp;Text to Speech&nbsp;&nbsp;&nbsp;</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <!-- Button to show selected value for the second dropdown -->
+            <button type="button" onclick="s2tTranslate('s2t')">&nbsp;&nbsp;&nbsp;Speech to Text&nbsp;&nbsp;&nbsp;</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <!-- Button to show selected value for the second dropdown -->
+            <button type="button" onclick="s2sTranslate('s2s')">&nbsp;&nbsp;&nbsp;Speech to Speech&nbsp;&nbsp;&nbsp;</button>
+        </div>
+        <br>
+        <!-- Two smaller buttons precisely beneath "Speech to Text" -->
+        <div class="button-container">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button id="button_s2t_start" disabled type="button" onclick="startRecording(this)">Start</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button id="button_s2t_stop" disabled type="button" onclick="stopRecording(this)">Stop</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button id="button_s2s_start" disabled type="button" onclick="startRecording(this)">Start</button>
+            <!-- <button id="button_s2s_start" disabled type="button" onclick="startRecording_s2s(this)">Start2</button> -->
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button id="button_s2s_stop" disabled type="button" onclick="stopRecording(this)">Stop</button>
+
+        </div>
+       
+    </div>
+
+    <br><br>
+
+    <!-- Display the result here -->
+    <div id="result"></div>
+
+</body>
+</html>

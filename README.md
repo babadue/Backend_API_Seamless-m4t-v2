@@ -15,11 +15,15 @@
 
 ## File Descriptions
 
-- **`seamlessm4tv2_api.py`**: Flask backend API provider for facebook/seamless-m4t-v2-large model.  &nbsp;There are currently two API calls: t2t, t2s
+- **`seamlessm4tv2_api.py`**: Flask backend API provider for facebook/seamless-m4t-v2-large model.  &nbsp;There are currently four API calls: t2t, t2s, s2t, s2s.
 
 - **`model_initializer.py`**:  Loading model.
 
 - **`index.html`**:  A web interface to make inferences.
+
+- **`seamlessm4tv2_api_s.py`**: Flask backend API provider for facebook/seamless-m4t-v2-large model with SSL enabled.  &nbsp;There are currently four API calls: t2t, t2s, s2t, s2s.  
+
+- **`index_s.html`**:  A SSL version of web interface to make inferences.
 
 ## Contributors 
 
